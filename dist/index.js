@@ -27,6 +27,7 @@ function enrichBatch(podcasts) {
     return __awaiter(this, void 0, void 0, function* () {
         const promises = [];
         let res = yield fetch(`${backendUrl}/enriched`, {
+            method: "POST",
             body: JSON.stringify({ items: podcasts.map((podcast) => podcast.id) }),
             headers: [["Content-Type", "application/json"]],
         });
@@ -90,6 +91,7 @@ function enrichAll() {
             }
             catch (e) {
                 console.log(`An error occured. Restarting batch ${saveState.page}. Error: ${e}`);
+                process.exit(1);
             }
         }
         console.log("All enrichments complete.");

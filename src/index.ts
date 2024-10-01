@@ -33,6 +33,7 @@ const prisma = new PrismaClient();
 async function enrichBatch(podcasts: Podcast[]): Promise<boolean> {
   const promises: Promise<any>[] = [];
   let res = await fetch(`${backendUrl}/enriched`, {
+    method: "POST",
     body: JSON.stringify({ items: podcasts.map((podcast) => podcast.id) }),
     headers: [["Content-Type", "application/json"]],
   });
@@ -117,6 +118,7 @@ async function enrichAll() {
       console.log(
         `An error occured. Restarting batch ${saveState.page}. Error: ${e}`
       );
+      process.exit(1);
     }
   }
 
