@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Podcast {
+  id                      Int    @id @default(autoincrement())
+  url                     String @unique(map: "sqlite_autoindex_podcasts_1")
+  title                   String
+  lastUpdate              Int?
+  link                    String
+  lastHttpStatus          Int?
+  dead                    Int?
+  contentType             String
+  itunesId                Int?
+  originalUrl             String
+  itunesAuthor            String
+  itunesOwnerName         String
+  explicit                Int?
+  imageUrl                String
+  itunesType              String
+  generator               String
+  newestItemPubdate       Int?
+  language                String
+  oldestItemPubdate       Int?
+  episodeCount            Int?
+  popularityScore         Int?
+  priority                Int?
+  createdOn               Int?
+  updateFrequency         Int?
+  chash                   String
+  host                    String
+  newestEnclosureUrl      String
+  podcastGuid             String
+  description             String
+  category1               String
+  category2               String
+  category3               String
+  category4               String
+  category5               String
+  category6               String
+  category7               String
+  category8               String
+  category9               String
+  category10              String
+  newestEnclosureDuration Int?
+
+  @@map("podcasts")
+}
