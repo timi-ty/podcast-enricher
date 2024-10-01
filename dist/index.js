@@ -26,30 +26,37 @@ const prisma = new client_1.PrismaClient();
 function enrichBatch(podcasts) {
     return __awaiter(this, void 0, void 0, function* () {
         const promises = [];
+        let res = yield fetch(`${backendUrl}/enriched`, {
+            body: JSON.stringify({ items: podcasts.map((podcast) => podcast.id) }),
+            headers: [["Content-Type", "application/json"]],
+        });
+        const enrichedPodcasts = yield res.json();
+        const unseenPodcasts = podcasts.filter((podcast) => !enrichedPodcasts.items.includes(podcast.id));
+        console.log(`Found ${unseenPodcasts.length} unseen podcasts in this batch. Only unseen podcasts will be enriched.`);
         const payload = { items: [] };
-        for (let i = 0; i < podcasts.length; i++) {
+        for (let i = 0; i < unseenPodcasts.length; i++) {
             const newReportRow = Object.assign({}, model_1.emptyEnriched);
             const enrichRow = () => __awaiter(this, void 0, void 0, function* () {
-                yield addBasicInfo(podcasts[i], newReportRow);
-                yield addSpotifyInfo(podcasts[i], newReportRow);
-                yield addAppleInfo(podcasts[i], newReportRow);
-                yield addYoutubeInfo(podcasts[i], newReportRow);
+                yield addBasicInfo(unseenPodcasts[i], newReportRow);
+                yield addSpotifyInfo(unseenPodcasts[i], newReportRow);
+                yield addAppleInfo(unseenPodcasts[i], newReportRow);
+                yield addYoutubeInfo(unseenPodcasts[i], newReportRow);
                 payload.items.push(newReportRow);
             });
             promises.push(enrichRow());
         }
         yield Promise.all(promises);
-        const res = yield fetch(`${backendUrl}/podcasts`, {
+        res = yield fetch(`${backendUrl}/podcasts`, {
             method: "POST",
             body: JSON.stringify(payload),
             headers: [["Content-Type", "application/json"]],
         });
         if (res.ok) {
-            console.log(`Posted ${podcasts.length} enriched podcasts. Result: ${yield res.text()}`);
+            console.log(`Posted ${unseenPodcasts.length} enriched podcasts. Result: ${yield res.text()}`);
             return true;
         }
         else {
-            console.log(`Failed to post ${podcasts.length} enriched podcast. Error: ${yield res.text()}`);
+            console.log(`Failed to post ${unseenPodcasts.length} enriched podcast. Error: ${yield res.text()}`);
             return false;
         }
     });
@@ -61,21 +68,21 @@ function enrichAll() {
         saveState.totalCount = yield prisma.podcast.count({ where: {} });
         while (saveState.seenCount < saveState.totalCount) {
             try {
-                const podcast = yield prisma.podcast.findMany({
+                const podcasts = yield prisma.podcast.findMany({
                     skip: saveState.page * saveState.limit,
                     take: saveState.limit,
                     orderBy: {
                         id: "asc",
                     },
                 });
-                console.log(`Started enriching batch ${saveState.page} with ${podcast.length} items...`);
-                const enriched = yield enrichBatch(podcast);
+                console.log(`Started enriching batch ${saveState.page} with ${podcasts.length} items...`);
+                const enriched = yield enrichBatch(podcasts);
                 if (!enriched) {
                     console.log(`Enrichment halted due to an error. Page - ${saveState.page}, Batch Limit - ${saveState.limit}, Progress - ${saveState.seenCount}/${saveState.totalCount}`);
                     process.exit(1);
                 }
-                console.log(`Finished enriching batch ${saveState.page} with ${podcast.length} items`);
-                saveState.seenCount = saveState.page * saveState.limit + podcast.length;
+                console.log(`Finished enriching batch ${saveState.page} with ${podcasts.length} items`);
+                saveState.seenCount = saveState.page * saveState.limit + podcasts.length;
                 console.log(`Enriched ${saveState.seenCount} Podcast so far out of ${saveState.totalCount}`);
                 saveState.page++;
                 yield (0, utils_1.saveEnrichmentState)(saveState, saveFileName);
@@ -132,6 +139,7 @@ function addSpotifyInfo(podcast, row) {
         }
         catch (e) {
             console.log(`Failed to add Spotify info to podcast "${podcast.title}". Error: ${e}`);
+            process.exit(1);
         }
     });
 }
@@ -152,6 +160,7 @@ function addAppleInfo(podcast, row) {
         }
         catch (e) {
             console.log(`Failed to add Apple info to podcast "${podcast.title}". Error: ${e}`);
+            process.exit(1);
         }
     });
 }
@@ -205,6 +214,7 @@ function addYoutubeInfo(podcast, row) {
         }
         catch (e) {
             console.log(`Failed to add Youtube info to podcast "${podcast.title}". Error: ${e}`);
+            process.exit(1);
         }
     });
 }
