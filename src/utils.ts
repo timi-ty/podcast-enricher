@@ -52,6 +52,7 @@ export async function fetchHydratedHtmlContent(url: string): Promise<string> {
   const page = await browser.newPage();
   await page.goto(url, { timeout: 120000, waitUntil: "networkidle2" });
   const html = await page.content();
+  await page.close();
   return html;
 }
 

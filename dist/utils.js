@@ -82,6 +82,7 @@ function fetchHydratedHtmlContent(url) {
         const page = yield browser.newPage();
         yield page.goto(url, { timeout: 120000, waitUntil: "networkidle2" });
         const html = yield page.content();
+        yield page.close();
         return html;
     });
 }
