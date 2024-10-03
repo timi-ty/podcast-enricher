@@ -48,11 +48,12 @@ async function enrichBatch(podcasts: Podcast[]): Promise<boolean> {
   for (let i = 0; i < unseenPodcasts.length; i++) {
     const newReportRow = { ...emptyPodcastEnriched };
     const enrichRow = async () => {
-      await addBasicInfo(unseenPodcasts[i], newReportRow);
-      await addSpotifyInfo(unseenPodcasts[i], newReportRow);
-      await addAppleInfo(unseenPodcasts[i], newReportRow);
-      await addYoutubeInfo(unseenPodcasts[i], newReportRow);
-      payload.items.push(newReportRow);
+      addBasicInfo(unseenPodcasts[i], newReportRow);
+      //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
+      let shouldPush = await addSpotifyInfo(unseenPodcasts[i], newReportRow);
+      shouldPush &&= await addAppleInfo(unseenPodcasts[i], newReportRow);
+      shouldPush &&= await addYoutubeInfo(unseenPodcasts[i], newReportRow);
+      if (shouldPush) payload.items.push(newReportRow);
     };
     promises.push(enrichRow());
   }
@@ -125,11 +126,7 @@ async function enrichAll() {
   console.log("All enrichments complete.");
 }
 
-async function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
-  if (!podcast) {
-    throw "Failed to get podcast from feed id.";
-  }
-
+function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
   row.podcast_index_id = podcast.id;
   row.podcast_name = podcast.title ?? "";
   row.podcast_description = podcast.description ?? "";
@@ -139,7 +136,10 @@ async function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
   row.authors = `${podcast.host}, ${podcast.itunesAuthor}, ${podcast.itunesOwnerName}`;
 }
 
-async function addSpotifyInfo(podcast: Podcast, row: PodcastEnriched) {
+async function addSpotifyInfo(
+  podcast: Podcast,
+  row: PodcastEnriched
+): Promise<boolean> {
   try {
     let searchResults = await searchSpotify(
       `${podcast.title} ${podcast.itunesAuthor}`
@@ -169,20 +169,24 @@ async function addSpotifyInfo(podcast: Podcast, row: PodcastEnriched) {
           extractStringFromParantheses(rating[0] ?? "0") ?? "0"
         );
         row.spotify_review_score = parseFloat(rating[1] ?? "0");
-        return;
+        return true;
       }
     }
+    return true;
   } catch (e) {
     console.log(
       `Failed to add Spotify info to podcast "${podcast.title}". Error: ${e}`
     );
-    process.exit(1);
+    return false;
   }
 }
 
-async function addAppleInfo(podcast: Podcast, row: PodcastEnriched) {
+async function addAppleInfo(
+  podcast: Podcast,
+  row: PodcastEnriched
+): Promise<boolean> {
   try {
-    if (!podcast.itunesId) return;
+    if (!podcast.itunesId) return true;
     const url = `https://podcasts.apple.com/podcast/id${podcast.itunesId}`;
     row.apple_podcast_url = url;
     const html = await fetchHydratedHtmlContent(url);
@@ -197,20 +201,25 @@ async function addAppleInfo(podcast: Podcast, row: PodcastEnriched) {
       extractStringFromParantheses(rating[0] ?? "0") ?? "0"
     );
     row.apple_review_score = parseInt((rating[0] ?? "0").split("(")[0]);
+    return true;
   } catch (e) {
     console.log(
       `Failed to add Apple info to podcast "${podcast.title}". Error: ${e}`
     );
-    process.exit(1);
+    return false;
   }
 }
 
-async function addYoutubeInfo(podcast: Podcast, row: PodcastEnriched) {
+async function addYoutubeInfo(
+  podcast: Podcast,
+  row: PodcastEnriched
+): Promise<boolean> {
   try {
     const lastEpisode = (await getRecentPodcastEpisodes(podcast, 1))?.items[0];
     if (!lastEpisode) {
-      console.log(`Failed to find an episode on podcast "${podcast.title}"`);
-      return;
+      throw new Error(
+        `Failed to find an episode on podcast "${podcast.title}"`
+      );
     }
     let searchResults = await searchYouTube(
       `${lastEpisode.title} ${podcast.title}`
@@ -261,7 +270,7 @@ async function addYoutubeInfo(podcast: Podcast, row: PodcastEnriched) {
         row.youtube_total_episodes = parseInt(
           channelInfo?.statistics?.videoCount ?? "0"
         );
-        if (!recentUploads) return;
+        if (!recentUploads) return false;
         console.log(
           `Got ${recentUploads.length} recent videos from ${videoInfo?.snippet?.channelTitle}`
         );
@@ -281,13 +290,15 @@ async function addYoutubeInfo(podcast: Podcast, row: PodcastEnriched) {
         row.youtube_last_published_at = new Date(
           recentUploads[0].snippet?.publishedAt ?? "1970-01-01T00:00:00Z"
         );
+        return true;
       }
     }
+    return true;
   } catch (e) {
     console.log(
       `Failed to add Youtube info to podcast "${podcast.title}". Error: ${e}`
     );
-    process.exit(1);
+    return false;
   }
 }
 

@@ -38,11 +38,13 @@ function enrichBatch(podcasts) {
         for (let i = 0; i < unseenPodcasts.length; i++) {
             const newReportRow = Object.assign({}, model_1.emptyEnriched);
             const enrichRow = () => __awaiter(this, void 0, void 0, function* () {
-                yield addBasicInfo(unseenPodcasts[i], newReportRow);
-                yield addSpotifyInfo(unseenPodcasts[i], newReportRow);
-                yield addAppleInfo(unseenPodcasts[i], newReportRow);
-                yield addYoutubeInfo(unseenPodcasts[i], newReportRow);
-                payload.items.push(newReportRow);
+                addBasicInfo(unseenPodcasts[i], newReportRow);
+                //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
+                let shouldPush = yield addSpotifyInfo(unseenPodcasts[i], newReportRow);
+                shouldPush && (shouldPush = yield addAppleInfo(unseenPodcasts[i], newReportRow));
+                shouldPush && (shouldPush = yield addYoutubeInfo(unseenPodcasts[i], newReportRow));
+                if (shouldPush)
+                    payload.items.push(newReportRow);
             });
             promises.push(enrichRow());
         }
@@ -98,19 +100,14 @@ function enrichAll() {
     });
 }
 function addBasicInfo(podcast, row) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
-        if (!podcast) {
-            throw "Failed to get podcast from feed id.";
-        }
-        row.podcast_index_id = podcast.id;
-        row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
-        row.podcast_description = (_b = podcast.description) !== null && _b !== void 0 ? _b : "";
-        row.rss_feed_url = (_c = podcast.url) !== null && _c !== void 0 ? _c : "";
-        row.rss_categories = `${podcast.category1}, ${podcast.category2}, ${podcast.category3}, ${podcast.category4}, ${podcast.category5}, ${podcast.category6}, ${podcast.category7}, ${podcast.category8}, ${podcast.category9}, ${podcast.category10}`;
-        row.rss_total_episodes = (_d = podcast.episodeCount) !== null && _d !== void 0 ? _d : 0;
-        row.authors = `${podcast.host}, ${podcast.itunesAuthor}, ${podcast.itunesOwnerName}`;
-    });
+    var _a, _b, _c, _d;
+    row.podcast_index_id = podcast.id;
+    row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
+    row.podcast_description = (_b = podcast.description) !== null && _b !== void 0 ? _b : "";
+    row.rss_feed_url = (_c = podcast.url) !== null && _c !== void 0 ? _c : "";
+    row.rss_categories = `${podcast.category1}, ${podcast.category2}, ${podcast.category3}, ${podcast.category4}, ${podcast.category5}, ${podcast.category6}, ${podcast.category7}, ${podcast.category8}, ${podcast.category9}, ${podcast.category10}`;
+    row.rss_total_episodes = (_d = podcast.episodeCount) !== null && _d !== void 0 ? _d : 0;
+    row.authors = `${podcast.host}, ${podcast.itunesAuthor}, ${podcast.itunesOwnerName}`;
 }
 function addSpotifyInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -135,13 +132,14 @@ function addSpotifyInfo(podcast, row) {
                     console.log(`Extracted Spotify rating ${rating} for ${show.name}.`);
                     row.spotify_review_count = parseInt((_e = (0, utils_1.extractStringFromParantheses)((_d = rating[0]) !== null && _d !== void 0 ? _d : "0")) !== null && _e !== void 0 ? _e : "0");
                     row.spotify_review_score = parseFloat((_f = rating[1]) !== null && _f !== void 0 ? _f : "0");
-                    return;
+                    return true;
                 }
             }
+            return true;
         }
         catch (e) {
             console.log(`Failed to add Spotify info to podcast "${podcast.title}". Error: ${e}`);
-            process.exit(1);
+            return false;
         }
     });
 }
@@ -150,7 +148,7 @@ function addAppleInfo(podcast, row) {
         var _a, _b, _c, _d;
         try {
             if (!podcast.itunesId)
-                return;
+                return true;
             const url = `https://podcasts.apple.com/podcast/id${podcast.itunesId}`;
             row.apple_podcast_url = url;
             const html = yield (0, utils_1.fetchHydratedHtmlContent)(url);
@@ -159,10 +157,11 @@ function addAppleInfo(podcast, row) {
             console.log(`Extracted Apple podcast rating ${rating} for ${podcast.title}.`);
             row.apple_review_count = parseInt((_c = (0, utils_1.extractStringFromParantheses)((_b = rating[0]) !== null && _b !== void 0 ? _b : "0")) !== null && _c !== void 0 ? _c : "0");
             row.apple_review_score = parseInt(((_d = rating[0]) !== null && _d !== void 0 ? _d : "0").split("(")[0]);
+            return true;
         }
         catch (e) {
             console.log(`Failed to add Apple info to podcast "${podcast.title}". Error: ${e}`);
-            process.exit(1);
+            return false;
         }
     });
 }
@@ -172,8 +171,7 @@ function addYoutubeInfo(podcast, row) {
         try {
             const lastEpisode = (_a = (yield (0, api_podcastindex_1.getRecentPodcastEpisodes)(podcast, 1))) === null || _a === void 0 ? void 0 : _a.items[0];
             if (!lastEpisode) {
-                console.log(`Failed to find an episode on podcast "${podcast.title}"`);
-                return;
+                throw new Error(`Failed to find an episode on podcast "${podcast.title}"`);
             }
             let searchResults = yield (0, api_youtube_1.searchYouTube)(`${lastEpisode.title} ${podcast.title}`);
             if (!searchResults || !searchResults.items) {
@@ -202,7 +200,7 @@ function addYoutubeInfo(podcast, row) {
                     row.youtube_average_views = Math.trunc(videoCount === 0 ? 0 : viewCount / videoCount);
                     row.youtube_total_episodes = parseInt((_y = (_x = channelInfo === null || channelInfo === void 0 ? void 0 : channelInfo.statistics) === null || _x === void 0 ? void 0 : _x.videoCount) !== null && _y !== void 0 ? _y : "0");
                     if (!recentUploads)
-                        return;
+                        return false;
                     console.log(`Got ${recentUploads.length} recent videos from ${(_z = videoInfo === null || videoInfo === void 0 ? void 0 : videoInfo.snippet) === null || _z === void 0 ? void 0 : _z.channelTitle}`);
                     let recentViews = 0;
                     for (let i = 0; i < recentUploads.length; i++) {
@@ -212,12 +210,14 @@ function addYoutubeInfo(podcast, row) {
                     }
                     row.youtube_recent_average_views = Math.trunc(recentUploads.length === 0 ? 0 : recentViews / recentUploads.length);
                     row.youtube_last_published_at = new Date((_6 = (_5 = recentUploads[0].snippet) === null || _5 === void 0 ? void 0 : _5.publishedAt) !== null && _6 !== void 0 ? _6 : "1970-01-01T00:00:00Z");
+                    return true;
                 }
             }
+            return true;
         }
         catch (e) {
             console.log(`Failed to add Youtube info to podcast "${podcast.title}". Error: ${e}`);
-            process.exit(1);
+            return false;
         }
     });
 }
