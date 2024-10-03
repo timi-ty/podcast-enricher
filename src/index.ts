@@ -209,9 +209,8 @@ async function addYoutubeInfo(podcast: Podcast, row: PodcastEnriched) {
   try {
     const lastEpisode = (await getRecentPodcastEpisodes(podcast, 1))?.items[0];
     if (!lastEpisode) {
-      throw new Error(
-        `Failed to find an episode on podcast "${podcast.title}"`
-      );
+      console.log(`Failed to find an episode on podcast "${podcast.title}"`);
+      return;
     }
     let searchResults = await searchYouTube(
       `${lastEpisode.title} ${podcast.title}`
