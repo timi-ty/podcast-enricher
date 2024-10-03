@@ -172,7 +172,8 @@ function addYoutubeInfo(podcast, row) {
         try {
             const lastEpisode = (_a = (yield (0, api_podcastindex_1.getRecentPodcastEpisodes)(podcast, 1))) === null || _a === void 0 ? void 0 : _a.items[0];
             if (!lastEpisode) {
-                throw new Error(`Failed to find an episode on podcast "${podcast.title}"`);
+                console.log(`Failed to find an episode on podcast "${podcast.title}"`);
+                return;
             }
             let searchResults = yield (0, api_youtube_1.searchYouTube)(`${lastEpisode.title} ${podcast.title}`);
             if (!searchResults || !searchResults.items) {
