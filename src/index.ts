@@ -23,10 +23,9 @@ import {
   PodcastsEnrichedPayload,
 } from "./model";
 
-const backendUrl = "http://localhost";
-// const backendUrl = "https://roxpodtracker.online";
-
 env.config();
+
+const backendUrl = process.env.BACKEND_URL ?? "";
 
 const prisma = new PrismaClient();
 
