@@ -6,7 +6,9 @@ export interface PodcastEnriched {
   rss_feed_url: string;
   rss_categories: string;
   rss_total_episodes: number;
-  authors: string;
+  host: string;
+  author: string;
+  owner: string;
   spotify_url: string;
   spotify_review_count: number;
   spotify_review_score: number;
@@ -29,7 +31,9 @@ export const emptyEnriched: PodcastEnriched = {
   rss_feed_url: "",
   rss_categories: "",
   rss_total_episodes: 0,
-  authors: "",
+  host: "",
+  author: "",
+  owner: "",
   spotify_url: "",
   spotify_review_count: 0,
   spotify_review_score: 0,

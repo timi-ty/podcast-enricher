@@ -23,8 +23,8 @@ import {
   PodcastsEnrichedPayload,
 } from "./model";
 
-// const backendUrl = "http://localhost";
-const backendUrl = "https://roxpodtracker.online";
+const backendUrl = "http://localhost";
+// const backendUrl = "https://roxpodtracker.online";
 
 env.config();
 
@@ -131,9 +131,24 @@ function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
   row.podcast_name = podcast.title ?? "";
   row.podcast_description = podcast.description ?? "";
   row.rss_feed_url = podcast.url ?? "";
-  row.rss_categories = `${podcast.category1}, ${podcast.category2}, ${podcast.category3}, ${podcast.category4}, ${podcast.category5}, ${podcast.category6}, ${podcast.category7}, ${podcast.category8}, ${podcast.category9}, ${podcast.category10}`;
+  row.rss_categories = [
+    podcast.category1,
+    podcast.category2,
+    podcast.category3,
+    podcast.category4,
+    podcast.category5,
+    podcast.category6,
+    podcast.category7,
+    podcast.category8,
+    podcast.category9,
+    podcast.category10,
+  ]
+    .filter((category) => category && category.trim() !== "")
+    .join(", ");
   row.rss_total_episodes = podcast.episodeCount ?? 0;
-  row.authors = `${podcast.host}, ${podcast.itunesAuthor}, ${podcast.itunesOwnerName}`;
+  row.host = podcast.host;
+  row.author = podcast.itunesAuthor;
+  row.owner = podcast.itunesOwnerName;
 }
 
 async function addSpotifyInfo(

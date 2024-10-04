@@ -19,8 +19,8 @@ const api_youtube_1 = require("./api.youtube");
 const client_1 = require("@prisma/client");
 const api_podcastindex_1 = require("./api.podcastindex");
 const model_1 = require("./model");
-// const backendUrl = "http://localhost";
-const backendUrl = "https://roxpodtracker.online";
+const backendUrl = "http://localhost";
+// const backendUrl = "https://roxpodtracker.online";
 dotenv_1.default.config();
 const prisma = new client_1.PrismaClient();
 function enrichBatch(podcasts) {
@@ -105,9 +105,24 @@ function addBasicInfo(podcast, row) {
     row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
     row.podcast_description = (_b = podcast.description) !== null && _b !== void 0 ? _b : "";
     row.rss_feed_url = (_c = podcast.url) !== null && _c !== void 0 ? _c : "";
-    row.rss_categories = `${podcast.category1}, ${podcast.category2}, ${podcast.category3}, ${podcast.category4}, ${podcast.category5}, ${podcast.category6}, ${podcast.category7}, ${podcast.category8}, ${podcast.category9}, ${podcast.category10}`;
+    row.rss_categories = [
+        podcast.category1,
+        podcast.category2,
+        podcast.category3,
+        podcast.category4,
+        podcast.category5,
+        podcast.category6,
+        podcast.category7,
+        podcast.category8,
+        podcast.category9,
+        podcast.category10,
+    ]
+        .filter((category) => category && category.trim() !== "")
+        .join(", ");
     row.rss_total_episodes = (_d = podcast.episodeCount) !== null && _d !== void 0 ? _d : 0;
-    row.authors = `${podcast.host}, ${podcast.itunesAuthor}, ${podcast.itunesOwnerName}`;
+    row.host = podcast.host;
+    row.author = podcast.itunesAuthor;
+    row.owner = podcast.itunesOwnerName;
 }
 function addSpotifyInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {
