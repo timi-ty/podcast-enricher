@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 const utils_1 = require("./utils");
@@ -19,9 +20,8 @@ const api_youtube_1 = require("./api.youtube");
 const client_1 = require("@prisma/client");
 const api_podcastindex_1 = require("./api.podcastindex");
 const model_1 = require("./model");
-const backendUrl = "http://localhost";
-// const backendUrl = "https://roxpodtracker.online";
 dotenv_1.default.config();
+const backendUrl = (_a = process.env.BACKEND_URL) !== null && _a !== void 0 ? _a : "";
 const prisma = new client_1.PrismaClient();
 function enrichBatch(podcasts) {
     return __awaiter(this, void 0, void 0, function* () {
