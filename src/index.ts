@@ -36,7 +36,10 @@ async function enrichBatch(podcasts: Podcast[]): Promise<boolean> {
     body: JSON.stringify({ items: podcasts.map((podcast) => podcast.id) }),
     headers: [["Content-Type", "application/json"]],
   });
-  const enrichedPodcasts: { items: number[] } = await res.json();
+  const enrichedPodcasts: { items: number[]; error: string } = await res.json();
+  if (enrichedPodcasts.error) {
+    throw new Error(enrichedPodcasts.error);
+  }
   const unseenPodcasts = podcasts.filter(
     (podcast) => !enrichedPodcasts.items.includes(podcast.id)
   );
@@ -82,11 +85,37 @@ async function enrichBatch(podcasts: Podcast[]): Promise<boolean> {
 async function enrichAll() {
   const saveFileName = `enrichment_state_${backendUrl.split("://")[1]}.json`;
   const saveState = await loadEnrichmentState(saveFileName);
-  saveState.totalCount = await prisma.podcast.count({ where: {} });
+
+  const thirtyDaysAgoTimestamp =
+    Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+
+  //be carefule to ensure that the filters for this count are the same as the filters for the podcasts that get enriched
+  saveState.totalCount = await prisma.podcast.count({
+    where: {
+      dead: 0,
+      newestItemPubdate: {
+        gte: thirtyDaysAgoTimestamp,
+      },
+      popularityScore: {
+        gte: 5,
+      },
+      host: "anchor.fm",
+    },
+  });
 
   while (saveState.seenCount < saveState.totalCount) {
     try {
       const podcasts = await prisma.podcast.findMany({
+        where: {
+          dead: 0,
+          newestItemPubdate: {
+            gte: thirtyDaysAgoTimestamp,
+          },
+          popularityScore: {
+            gte: 5,
+          },
+          host: "anchor.fm",
+        },
         skip: saveState.page * saveState.limit,
         take: saveState.limit,
         orderBy: {
@@ -116,7 +145,7 @@ async function enrichAll() {
       await closeBrowser();
     } catch (e) {
       console.log(
-        `An error occured. Restarting batch ${saveState.page}. Error: ${e}`
+        `An error occured. Stopped at batch ${saveState.page}. Error: ${e}`
       );
       process.exit(1);
     }

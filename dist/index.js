@@ -32,6 +32,9 @@ function enrichBatch(podcasts) {
             headers: [["Content-Type", "application/json"]],
         });
         const enrichedPodcasts = yield res.json();
+        if (enrichedPodcasts.error) {
+            throw new Error(enrichedPodcasts.error);
+        }
         const unseenPodcasts = podcasts.filter((podcast) => !enrichedPodcasts.items.includes(podcast.id));
         console.log(`Found ${unseenPodcasts.length} unseen podcasts in this batch. Only unseen podcasts will be enriched.`);
         const payload = { items: [] };
@@ -68,10 +71,33 @@ function enrichAll() {
     return __awaiter(this, void 0, void 0, function* () {
         const saveFileName = `enrichment_state_${backendUrl.split("://")[1]}.json`;
         const saveState = yield (0, utils_1.loadEnrichmentState)(saveFileName);
-        saveState.totalCount = yield prisma.podcast.count({ where: {} });
+        const thirtyDaysAgoTimestamp = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+        //be carefule to ensure that the filters for this count are the same as the filters for the podcasts that get enriched
+        saveState.totalCount = yield prisma.podcast.count({
+            where: {
+                dead: 0,
+                newestItemPubdate: {
+                    gte: thirtyDaysAgoTimestamp,
+                },
+                popularityScore: {
+                    gte: 5,
+                },
+                host: "anchor.fm",
+            },
+        });
         while (saveState.seenCount < saveState.totalCount) {
             try {
                 const podcasts = yield prisma.podcast.findMany({
+                    where: {
+                        dead: 0,
+                        newestItemPubdate: {
+                            gte: thirtyDaysAgoTimestamp,
+                        },
+                        popularityScore: {
+                            gte: 5,
+                        },
+                        host: "anchor.fm",
+                    },
                     skip: saveState.page * saveState.limit,
                     take: saveState.limit,
                     orderBy: {
@@ -92,7 +118,7 @@ function enrichAll() {
                 yield (0, utils_1.closeBrowser)();
             }
             catch (e) {
-                console.log(`An error occured. Restarting batch ${saveState.page}. Error: ${e}`);
+                console.log(`An error occured. Stopped at batch ${saveState.page}. Error: ${e}`);
                 process.exit(1);
             }
         }
