@@ -50,6 +50,9 @@ async function enrichBatch(podcasts: Podcast[]): Promise<boolean> {
   for (let i = 0; i < unseenPodcasts.length; i++) {
     const newReportRow = { ...emptyPodcastEnriched };
     const enrichRow = async () => {
+      console.log(
+        `Enriching podcast "${unseenPodcasts[i].title}" with popularity score = ${unseenPodcasts[i].popularityScore}`
+      );
       addBasicInfo(unseenPodcasts[i], newReportRow);
       //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
       let shouldPush = await addSpotifyInfo(unseenPodcasts[i], newReportRow);
@@ -93,13 +96,6 @@ async function enrichAll() {
   saveState.totalCount = await prisma.podcast.count({
     where: {
       dead: 0,
-      newestItemPubdate: {
-        gte: thirtyDaysAgoTimestamp,
-      },
-      popularityScore: {
-        gte: 5,
-      },
-      host: "anchor.fm",
     },
   });
 
@@ -108,19 +104,10 @@ async function enrichAll() {
       const podcasts = await prisma.podcast.findMany({
         where: {
           dead: 0,
-          newestItemPubdate: {
-            gte: thirtyDaysAgoTimestamp,
-          },
-          popularityScore: {
-            gte: 5,
-          },
-          host: "anchor.fm",
         },
         skip: saveState.page * saveState.limit,
         take: saveState.limit,
-        orderBy: {
-          id: "asc",
-        },
+        orderBy: [{ popularityScore: "desc" }, { newestItemPubdate: "desc" }],
       });
       console.log(
         `Started enriching batch ${saveState.page} with ${podcasts.length} items...`

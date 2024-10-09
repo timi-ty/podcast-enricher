@@ -41,6 +41,7 @@ function enrichBatch(podcasts) {
         for (let i = 0; i < unseenPodcasts.length; i++) {
             const newReportRow = Object.assign({}, model_1.emptyEnriched);
             const enrichRow = () => __awaiter(this, void 0, void 0, function* () {
+                console.log(`Enriching podcast "${unseenPodcasts[i].title}" with popularity score = ${unseenPodcasts[i].popularityScore}`);
                 addBasicInfo(unseenPodcasts[i], newReportRow);
                 //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
                 let shouldPush = yield addSpotifyInfo(unseenPodcasts[i], newReportRow);
@@ -76,13 +77,6 @@ function enrichAll() {
         saveState.totalCount = yield prisma.podcast.count({
             where: {
                 dead: 0,
-                newestItemPubdate: {
-                    gte: thirtyDaysAgoTimestamp,
-                },
-                popularityScore: {
-                    gte: 5,
-                },
-                host: "anchor.fm",
             },
         });
         while (saveState.seenCount < saveState.totalCount) {
@@ -90,19 +84,10 @@ function enrichAll() {
                 const podcasts = yield prisma.podcast.findMany({
                     where: {
                         dead: 0,
-                        newestItemPubdate: {
-                            gte: thirtyDaysAgoTimestamp,
-                        },
-                        popularityScore: {
-                            gte: 5,
-                        },
-                        host: "anchor.fm",
                     },
                     skip: saveState.page * saveState.limit,
                     take: saveState.limit,
-                    orderBy: {
-                        id: "asc",
-                    },
+                    orderBy: [{ popularityScore: "desc" }, { newestItemPubdate: "desc" }],
                 });
                 console.log(`Started enriching batch ${saveState.page} with ${podcasts.length} items...`);
                 const enriched = yield enrichBatch(podcasts);
