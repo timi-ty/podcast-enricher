@@ -2,10 +2,11 @@ import env from "dotenv";
 import {
   closeBrowser,
   extractAppleReview,
+  extractFromParentheses,
   extractSpotifyReview,
-  extractStringFromParantheses,
   fetchHydratedHtmlContent,
   loadEnrichmentState,
+  parseReviewCount,
   saveEnrichmentState,
 } from "./utils";
 import { searchSpotify } from "./api.spotify";
@@ -116,11 +117,13 @@ async function enrichAll() {
           },
           host: "anchor.fm",
         },
+        orderBy: [
+          { popularityScore: "desc" },
+          { newestItemPubdate: "desc" },
+          { id: "asc" },
+        ],
         skip: saveState.page * saveState.limit,
         take: saveState.limit,
-        orderBy: {
-          id: "asc",
-        },
       });
       console.log(
         `Started enriching batch ${saveState.page} with ${podcasts.length} items...`
@@ -208,8 +211,8 @@ async function addSpotifyInfo(
         );
         const rating = extractSpotifyReview(html) ?? ["0", "0"];
         console.log(`Extracted Spotify rating ${rating} for ${show.name}.`);
-        row.spotify_review_count = parseInt(
-          extractStringFromParantheses(rating[0] ?? "0") ?? "0"
+        row.spotify_review_count = parseReviewCount(
+          extractFromParentheses(rating[0] ?? "")
         );
         row.spotify_review_score = parseFloat(rating[1] ?? "0");
         return true;
@@ -240,8 +243,8 @@ async function addAppleInfo(
     console.log(
       `Extracted Apple podcast rating ${rating} for ${podcast.title}.`
     );
-    row.apple_review_count = parseInt(
-      extractStringFromParantheses(rating[0] ?? "0") ?? "0"
+    row.apple_review_count = parseReviewCount(
+      extractFromParentheses(rating[0] ?? "")
     );
     row.apple_review_score = parseInt((rating[0] ?? "0").split("(")[0]);
     return true;

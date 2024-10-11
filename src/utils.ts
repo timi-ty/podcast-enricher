@@ -31,14 +31,29 @@ export function extractAppleReview(html: string): (string | null)[] {
   return [reviewInfo.length ? reviewInfo : null];
 }
 
-export function extractStringFromParantheses(input: string): string | null {
-  const match = input.match(/\((\d+)\)/);
+export function extractFromParentheses(str: string): string | null {
+  const match = str.match(/\((.*?)\)/);
+  return match ? match[1] : null;
+}
 
-  if (match && match[1]) {
-    return match[1];
+export function parseReviewCount(count: string | null): number {
+  if (count === null) return 0;
+
+  const cleanCount = count.trim();
+  const multipliers: { [key: string]: number } = {
+    k: 1000,
+    m: 1000000,
+    b: 1000000000,
+  };
+
+  if (/^[\d.]+[kmb]?$/i.test(cleanCount)) {
+    const [, num, suffix] = cleanCount.match(/^([\d.]+)([kmb])?$/i) || [];
+    const baseNumber = parseFloat(num);
+    const multiplier = multipliers[suffix?.toLowerCase()] || 1;
+    return Math.round(baseNumber * multiplier);
   }
 
-  return null;
+  return parseInt(cleanCount) || 0;
 }
 
 let browser: puppeteer.Browser | null = null;

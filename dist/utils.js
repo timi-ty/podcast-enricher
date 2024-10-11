@@ -38,7 +38,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sha1 = sha1;
 exports.extractSpotifyReview = extractSpotifyReview;
 exports.extractAppleReview = extractAppleReview;
-exports.extractStringFromParantheses = extractStringFromParantheses;
+exports.extractFromParentheses = extractFromParentheses;
+exports.parseReviewCount = parseReviewCount;
 exports.fetchHydratedHtmlContent = fetchHydratedHtmlContent;
 exports.closeBrowser = closeBrowser;
 exports.saveEnrichmentState = saveEnrichmentState;
@@ -64,12 +65,26 @@ function extractAppleReview(html) {
     const reviewInfo = $("li.svelte-11a0tog").first().text().trim();
     return [reviewInfo.length ? reviewInfo : null];
 }
-function extractStringFromParantheses(input) {
-    const match = input.match(/\((\d+)\)/);
-    if (match && match[1]) {
-        return match[1];
+function extractFromParentheses(str) {
+    const match = str.match(/\((.*?)\)/);
+    return match ? match[1] : null;
+}
+function parseReviewCount(count) {
+    if (count === null)
+        return 0;
+    const cleanCount = count.trim();
+    const multipliers = {
+        k: 1000,
+        m: 1000000,
+        b: 1000000000,
+    };
+    if (/^[\d.]+[kmb]?$/i.test(cleanCount)) {
+        const [, num, suffix] = cleanCount.match(/^([\d.]+)([kmb])?$/i) || [];
+        const baseNumber = parseFloat(num);
+        const multiplier = multipliers[suffix === null || suffix === void 0 ? void 0 : suffix.toLowerCase()] || 1;
+        return Math.round(baseNumber * multiplier);
     }
-    return null;
+    return parseInt(cleanCount) || 0;
 }
 let browser = null;
 function fetchHydratedHtmlContent(url) {

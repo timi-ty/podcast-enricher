@@ -98,11 +98,13 @@ function enrichAll() {
                         },
                         host: "anchor.fm",
                     },
+                    orderBy: [
+                        { popularityScore: "desc" },
+                        { newestItemPubdate: "desc" },
+                        { id: "asc" },
+                    ],
                     skip: saveState.page * saveState.limit,
                     take: saveState.limit,
-                    orderBy: {
-                        id: "asc",
-                    },
                 });
                 console.log(`Started enriching batch ${saveState.page} with ${podcasts.length} items...`);
                 const enriched = yield enrichBatch(podcasts);
@@ -152,7 +154,7 @@ function addBasicInfo(podcast, row) {
 }
 function addSpotifyInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e;
         try {
             let searchResults = yield (0, api_spotify_1.searchSpotify)(`${podcast.title} ${podcast.itunesAuthor}`);
             if (searchResults.shows.items.length < 1 && podcast.title) {
@@ -171,8 +173,8 @@ function addSpotifyInfo(podcast, row) {
                     console.log(`Fetched Spotify html for ${show.name}. It has ${html.length} characters.`);
                     const rating = (_c = (0, utils_1.extractSpotifyReview)(html)) !== null && _c !== void 0 ? _c : ["0", "0"];
                     console.log(`Extracted Spotify rating ${rating} for ${show.name}.`);
-                    row.spotify_review_count = parseInt((_e = (0, utils_1.extractStringFromParantheses)((_d = rating[0]) !== null && _d !== void 0 ? _d : "0")) !== null && _e !== void 0 ? _e : "0");
-                    row.spotify_review_score = parseFloat((_f = rating[1]) !== null && _f !== void 0 ? _f : "0");
+                    row.spotify_review_count = (0, utils_1.parseReviewCount)((0, utils_1.extractFromParentheses)((_d = rating[0]) !== null && _d !== void 0 ? _d : ""));
+                    row.spotify_review_score = parseFloat((_e = rating[1]) !== null && _e !== void 0 ? _e : "0");
                     return true;
                 }
             }
@@ -186,7 +188,7 @@ function addSpotifyInfo(podcast, row) {
 }
 function addAppleInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         try {
             if (!podcast.itunesId)
                 return true;
@@ -196,8 +198,8 @@ function addAppleInfo(podcast, row) {
             console.log(`Fetched Apple podcast html for ${podcast.title}. It has ${html.length} characters.`);
             const rating = (_a = (0, utils_1.extractAppleReview)(html)) !== null && _a !== void 0 ? _a : ["No Rating"];
             console.log(`Extracted Apple podcast rating ${rating} for ${podcast.title}.`);
-            row.apple_review_count = parseInt((_c = (0, utils_1.extractStringFromParantheses)((_b = rating[0]) !== null && _b !== void 0 ? _b : "0")) !== null && _c !== void 0 ? _c : "0");
-            row.apple_review_score = parseInt(((_d = rating[0]) !== null && _d !== void 0 ? _d : "0").split("(")[0]);
+            row.apple_review_count = (0, utils_1.parseReviewCount)((0, utils_1.extractFromParentheses)((_b = rating[0]) !== null && _b !== void 0 ? _b : ""));
+            row.apple_review_score = parseInt(((_c = rating[0]) !== null && _c !== void 0 ? _c : "0").split("(")[0]);
             return true;
         }
         catch (e) {
