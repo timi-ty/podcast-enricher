@@ -92,10 +92,6 @@ function enrichAll() {
                     ],
                     skip: saveState.page * saveState.limit,
                     take: saveState.limit,
-<<<<<<< HEAD
-                    orderBy: [{ popularityScore: "desc" }, { newestItemPubdate: "desc" }],
-=======
->>>>>>> temp-branch
                 });
                 console.log(`Started enriching batch ${saveState.page} with ${podcasts.length} items...`);
                 const enriched = yield enrichBatch(podcasts);
