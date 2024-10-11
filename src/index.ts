@@ -90,9 +90,6 @@ async function enrichAll() {
   const saveFileName = `enrichment_state_${backendUrl.split("://")[1]}.json`;
   const saveState = await loadEnrichmentState(saveFileName);
 
-  const thirtyDaysAgoTimestamp =
-    Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
-
   //be carefule to ensure that the filters for this count are the same as the filters for the podcasts that get enriched
   saveState.totalCount = await prisma.podcast.count({
     where: {
