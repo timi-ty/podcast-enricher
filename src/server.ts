@@ -47,7 +47,9 @@ export function startServer() {
       //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
 
       const payload: PodcastsEnrichedPayload = { items: [] };
-      payload.items = podcasts;
+      payload.items = podcasts.map((podcast, index) => {
+        return { ...podcast, language: podcastsToEnrich[index].language };
+      });
       let response = await fetch(`${backendUrl}/podcasts`, {
         method: "POST",
         body: JSON.stringify(payload),
@@ -73,7 +75,7 @@ export function startServer() {
       //       .json({ error: "Enrichment process did not finish." });
       //   }
 
-      await closeBrowser();
+      //   await closeBrowser();
 
       res.json({ success: response.ok });
     } catch (error) {
