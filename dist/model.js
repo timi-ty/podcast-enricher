@@ -5,6 +5,7 @@ exports.emptyEnriched = {
     id: -1, //Id of -1 will make the backend create a new entry
     podcast_index_id: null,
     podcast_name: "",
+    language: "",
     podcast_description: "",
     rss_feed_url: "",
     rss_categories: "",
@@ -24,4 +25,5 @@ exports.emptyEnriched = {
     youtube_total_episodes: 0,
     youtube_recent_average_views: 0,
     youtube_last_published_at: new Date("1970-01-01T00:00:00Z"),
+    stale: false,
 };
