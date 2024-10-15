@@ -156,6 +156,7 @@ export async function enrichAll() {
 function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
   row.podcast_index_id = podcast.id;
   row.podcast_name = podcast.title ?? "";
+  row.language = podcast.language ?? "";
   row.podcast_description = podcast.description ?? "";
   row.rss_feed_url = podcast.url ?? "";
   row.rss_categories = [

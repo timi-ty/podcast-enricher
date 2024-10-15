@@ -2,6 +2,7 @@ export interface PodcastEnriched {
   id: number;
   podcast_index_id: number | null;
   podcast_name: string;
+  language: string;
   podcast_description: string;
   rss_feed_url: string;
   rss_categories: string;
@@ -27,6 +28,7 @@ export const emptyEnriched: PodcastEnriched = {
   id: -1, //Id of -1 will make the backend create a new entry
   podcast_index_id: null,
   podcast_name: "",
+  language: "",
   podcast_description: "",
   rss_feed_url: "",
   rss_categories: "",
