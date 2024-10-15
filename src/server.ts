@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
-import { PodcastEnriched } from "./model";
-import { closeBrowser, prisma } from "./utils";
+import { PodcastEnriched, PodcastsEnrichedPayload } from "./model";
+import { backendUrl, closeBrowser, prisma } from "./utils";
 import { enrichBatch } from "./enrichment";
 
 export function startServer() {
@@ -44,17 +44,38 @@ export function startServer() {
       }
 
       // Re-enrich the podcasts
-      const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
+      //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
 
-      if (!isAllEnriched) {
-        return res
-          .status(500)
-          .json({ error: "Enrichment process did not finish." });
+      const payload: PodcastsEnrichedPayload = { items: [] };
+      payload.items = podcasts;
+      let response = await fetch(`${backendUrl}/podcasts`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: [["Content-Type", "application/json"]],
+      });
+      if (response.ok) {
+        console.log(
+          `Posted ${
+            podcastsToEnrich.length
+          } enriched podcasts. Result: ${await response.text()}`
+        );
+      } else {
+        console.log(
+          `Failed to post ${
+            podcastsToEnrich.length
+          } enriched podcast. Error: ${await response.text()}`
+        );
       }
+
+      //   if (!isAllEnriched) {
+      //     return res
+      //       .status(500)
+      //       .json({ error: "Enrichment process did not finish." });
+      //   }
 
       await closeBrowser();
 
-      res.json({ success: isAllEnriched });
+      res.json({ success: response.ok });
     } catch (error) {
       console.error("Error in re-enrichment process:", error);
       res
