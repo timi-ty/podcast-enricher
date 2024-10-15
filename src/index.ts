@@ -4,7 +4,7 @@ import { prisma } from "./utils";
 
 startServer();
 
-enrichAll();
+// enrichAll();
 
 process.on("SIGINT", async () => {
   await prisma.$disconnect();
