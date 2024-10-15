@@ -9,11 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const enrichment_1 = require("./enrichment");
 const server_1 = require("./server");
 const utils_1 = require("./utils");
 (0, server_1.startServer)();
-(0, enrichment_1.enrichAll)();
+// enrichAll();
 process.on("SIGINT", () => __awaiter(void 0, void 0, void 0, function* () {
     yield utils_1.prisma.$disconnect();
     process.exit(0);

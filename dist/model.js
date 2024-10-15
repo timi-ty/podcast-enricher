@@ -5,6 +5,7 @@ exports.emptyEnriched = {
     id: -1, //Id of -1 will make the backend create a new entry
     podcast_index_id: null,
     podcast_name: "",
+    language: "",
     podcast_description: "",
     rss_feed_url: "",
     rss_categories: "",

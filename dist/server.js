@@ -16,7 +16,6 @@ exports.startServer = startServer;
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const utils_1 = require("./utils");
-const enrichment_1 = require("./enrichment");
 function startServer() {
     const app = (0, express_1.default)();
     const port = process.env.PORT;
@@ -49,14 +48,29 @@ function startServer() {
                     .json({ error: "No matching podcasts found in the database." });
             }
             // Re-enrich the podcasts
-            const isAllEnriched = yield (0, enrichment_1.enrichBatch)(podcastsToEnrich, true);
-            if (!isAllEnriched) {
-                return res
-                    .status(500)
-                    .json({ error: "Enrichment process did not finish." });
+            //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
+            const payload = { items: [] };
+            payload.items = podcasts.map((podcast, index) => {
+                return Object.assign(Object.assign({}, podcast), { language: podcastsToEnrich[index].language });
+            });
+            let response = yield fetch(`${utils_1.backendUrl}/podcasts`, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: [["Content-Type", "application/json"]],
+            });
+            if (response.ok) {
+                console.log(`Posted ${podcastsToEnrich.length} enriched podcasts. Result: ${yield response.text()}`);
             }
-            yield (0, utils_1.closeBrowser)();
-            res.json({ success: isAllEnriched });
+            else {
+                console.log(`Failed to post ${podcastsToEnrich.length} enriched podcast. Error: ${yield response.text()}`);
+            }
+            //   if (!isAllEnriched) {
+            //     return res
+            //       .status(500)
+            //       .json({ error: "Enrichment process did not finish." });
+            //   }
+            //   await closeBrowser();
+            res.json({ success: response.ok });
         }
         catch (error) {
             console.error("Error in re-enrichment process:", error);
