@@ -25,6 +25,7 @@
     "googleapis": "^142.0.0",
     "instagram-web-api": "^2.2.2",
     "puppeteer": "^23.1.0",
+    "sqlite3": "^5.1.7",
     "tar": "^7.4.3",
     "typescript": "^5.5.4",
     "youtube-search-api": "^1.2.2"
