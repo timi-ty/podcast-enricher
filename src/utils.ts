@@ -3,6 +3,14 @@ import * as cheerio from "cheerio";
 import * as puppeteer from "puppeteer";
 import fs from "fs/promises";
 import { EnrichmentState } from "./model";
+import { PrismaClient } from "@prisma/client";
+import env from "dotenv";
+
+env.config();
+
+export const backendUrl = process.env.BACKEND_URL ?? "";
+
+export const prisma = new PrismaClient();
 
 export function sha1(str: string) {
   return crypto.createHash("sha1").update(str).digest("hex");

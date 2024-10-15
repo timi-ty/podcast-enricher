@@ -34,7 +34,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.prisma = exports.backendUrl = void 0;
 exports.sha1 = sha1;
 exports.extractSpotifyReview = extractSpotifyReview;
 exports.extractAppleReview = extractAppleReview;
@@ -48,6 +50,11 @@ const crypto_1 = __importDefault(require("crypto"));
 const cheerio = __importStar(require("cheerio"));
 const puppeteer = __importStar(require("puppeteer"));
 const promises_1 = __importDefault(require("fs/promises"));
+const client_1 = require("@prisma/client");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+exports.backendUrl = (_a = process.env.BACKEND_URL) !== null && _a !== void 0 ? _a : "";
+exports.prisma = new client_1.PrismaClient();
 function sha1(str) {
     return crypto_1.default.createHash("sha1").update(str).digest("hex");
 }
