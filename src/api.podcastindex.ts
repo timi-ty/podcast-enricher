@@ -4,7 +4,7 @@ import { Podcast } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 import https from "https";
-import tar from "tar";
+import * as tar from "tar";
 import zlib from "zlib";
 import sqlite3 from "sqlite3";
 import { promisify } from "util";
