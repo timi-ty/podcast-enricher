@@ -65,8 +65,8 @@ function getRecentPodcastEpisodes(podcast, max) {
     });
 }
 const dbDownloadUrl = "https://public.podcastindex.org/podcastindex_feeds.db.tgz";
-const dbDownloadPath = path_1.default.join(__dirname, "podcastindex_feeds.db.tgz");
-const dbExtractPath = path_1.default.join(__dirname, "prisma");
+const dbDownloadPath = path_1.default.join(process.cwd(), "podcastindex_feeds.db.tgz");
+const dbExtractPath = path_1.default.join(process.cwd(), "prisma");
 const dbFilePath = path_1.default.join(dbExtractPath, "podcastindex_feeds.db");
 function downloadAndExtractDatabase() {
     return __awaiter(this, void 0, void 0, function* () {

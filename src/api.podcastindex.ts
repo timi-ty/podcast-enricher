@@ -65,8 +65,8 @@ export interface Episode {
 
 const dbDownloadUrl =
   "https://public.podcastindex.org/podcastindex_feeds.db.tgz";
-const dbDownloadPath = path.join(__dirname, "podcastindex_feeds.db.tgz");
-const dbExtractPath = path.join(__dirname, "prisma");
+const dbDownloadPath = path.join(process.cwd(), "podcastindex_feeds.db.tgz");
+const dbExtractPath = path.join(process.cwd(), "prisma");
 const dbFilePath = path.join(dbExtractPath, "podcastindex_feeds.db");
 
 export async function downloadAndExtractDatabase() {
