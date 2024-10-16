@@ -112,7 +112,7 @@ const dbRun = promisify(sqlite3.Database.prototype.run);
 const dbClose = promisify(sqlite3.Database.prototype.close);
 
 export async function cleanupDatabase() {
-  const db = new sqlite3.Database("podcastindex_feeds.db");
+  const db = new sqlite3.Database(dbFilePath);
 
   try {
     console.log(

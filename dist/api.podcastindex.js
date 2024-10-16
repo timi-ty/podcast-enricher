@@ -105,7 +105,7 @@ const dbRun = (0, util_1.promisify)(sqlite3_1.default.Database.prototype.run);
 const dbClose = (0, util_1.promisify)(sqlite3_1.default.Database.prototype.close);
 function cleanupDatabase() {
     return __awaiter(this, void 0, void 0, function* () {
-        const db = new sqlite3_1.default.Database("podcastindex_feeds.db");
+        const db = new sqlite3_1.default.Database(dbFilePath);
         try {
             console.log("Connected to the SQLite database. Cleaning up podcastindex_feeds.db...");
             // Get all tables in the database
