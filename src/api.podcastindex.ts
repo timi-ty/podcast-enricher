@@ -106,7 +106,7 @@ export async function downloadAndExtractDatabase() {
   }
 }
 
-export async function cleanupDatabase(): Promise<void> {
+export function cleanupDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbFilePath);
 
@@ -142,13 +142,23 @@ export async function cleanupDatabase(): Promise<void> {
             for (const column of columns) {
               const updateQuery = `UPDATE ${table.name} SET ${column.name} = NULL WHERE ${column.name} = ''`;
               await new Promise<void>((resolve, reject) => {
-                db.run(updateQuery, [], function (err) {
+                db.run(updateQuery, [], function (err: any) {
                   if (err) {
-                    console.error(
-                      `Error updating ${table.name}.${column.name}:`,
-                      err.message
-                    );
-                    reject(err);
+                    if (
+                      err.code === "SQLITE_CONSTRAINT" &&
+                      err.message.includes("NOT NULL constraint failed")
+                    ) {
+                      console.warn(
+                        `Warning: NOT NULL constraint for ${table.name}.${column.name}: ${err.message}`
+                      );
+                      resolve(); // Continue with the next column
+                    } else {
+                      console.error(
+                        `Error updating ${table.name}.${column.name}:`,
+                        err.message
+                      );
+                      reject(err);
+                    }
                   } else {
                     console.log(
                       `Updated ${this.changes} rows in ${table.name}.${column.name}`
