@@ -106,54 +106,71 @@ export async function downloadAndExtractDatabase() {
   }
 }
 
-// Promisify sqlite3 methods
-const dbAll = promisify(sqlite3.Database.prototype.all);
-const dbRun = promisify(sqlite3.Database.prototype.run);
-const dbClose = promisify(sqlite3.Database.prototype.close);
+export async function cleanupDatabase(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(dbFilePath);
 
-export async function cleanupDatabase() {
-  const db = new sqlite3.Database(dbFilePath);
-
-  try {
     console.log(
       "Connected to the SQLite database. Cleaning up podcastindex_feeds.db..."
     );
 
-    // Get all tables in the database
-    const tables = (await dbAll.call(
-      db,
-      "SELECT name FROM sqlite_master WHERE type='table'"
-    )) as { name: string }[];
+    db.all(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+      [],
+      async (err, tables: any[]) => {
+        if (err) {
+          console.error("Error getting tables:", err.message);
+          reject(err);
+          return;
+        }
 
-    for (const table of tables) {
-      // Get all columns for the current table
-      const columns = (await dbAll.call(
-        db,
-        `PRAGMA table_info(${table.name})`
-      )) as { name: string }[];
+        try {
+          // Process each table
+          for (const table of tables) {
+            // Get all columns for the current table
+            const columns: any[] = await new Promise((resolve, reject) => {
+              db.all(`PRAGMA table_info(${table.name})`, [], (err, columns) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(columns);
+                }
+              });
+            });
 
-      for (const column of columns) {
-        // Update empty strings to NULL for each column
-        const updateQuery = `UPDATE ${table.name} SET ${column.name} = NULL WHERE ${column.name} = ''`;
-        const result: any = await dbRun.call(db, updateQuery);
-        console.log(
-          `Updated ${result.changes} rows in ${table.name}.${column.name}`
-        );
+            // Update empty strings to NULL for each column
+            for (const column of columns) {
+              const updateQuery = `UPDATE ${table.name} SET ${column.name} = NULL WHERE ${column.name} = ''`;
+              await new Promise<void>((resolve, reject) => {
+                db.run(updateQuery, [], function (err) {
+                  if (err) {
+                    console.error(
+                      `Error updating ${table.name}.${column.name}:`,
+                      err.message
+                    );
+                    reject(err);
+                  } else {
+                    console.log(
+                      `Updated ${this.changes} rows in ${table.name}.${column.name}`
+                    );
+                    resolve();
+                  }
+                });
+              });
+            }
+          }
+
+          console.log("Database cleanup completed successfully.");
+          db.close();
+          resolve();
+        } catch (error) {
+          console.error("Error during database cleanup:", error);
+          db.close();
+          reject(error);
+        }
       }
-    }
-
-    console.log("Database cleanup completed.");
-  } catch (err) {
-    console.error("Error during database cleanup:", (err as Error).message);
-  } finally {
-    // Close the database connection
-    try {
-      await dbClose.call(db);
-      console.log("Database connection closed.");
-    } catch (err) {
-      console.error("Error closing database:", (err as Error).message);
-    }
-  }
+    );
+  });
 }
 
 export function isPodcastDbOldOrMissing(): boolean {

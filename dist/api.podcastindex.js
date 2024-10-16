@@ -47,7 +47,6 @@ const https_1 = __importDefault(require("https"));
 const tar = __importStar(require("tar"));
 const zlib_1 = __importDefault(require("zlib"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
-const util_1 = require("util");
 function getRecentPodcastEpisodes(podcast, max) {
     return __awaiter(this, void 0, void 0, function* () {
         const podcastIndexRecentsUrl = `https://api.podcastindex.org/api/1.0/episodes/byfeedid?id=${podcast.id}&max=${max}`;
@@ -99,42 +98,59 @@ function downloadAndExtractDatabase() {
         }
     });
 }
-// Promisify sqlite3 methods
-const dbAll = (0, util_1.promisify)(sqlite3_1.default.Database.prototype.all);
-const dbRun = (0, util_1.promisify)(sqlite3_1.default.Database.prototype.run);
-const dbClose = (0, util_1.promisify)(sqlite3_1.default.Database.prototype.close);
 function cleanupDatabase() {
     return __awaiter(this, void 0, void 0, function* () {
-        const db = new sqlite3_1.default.Database(dbFilePath);
-        try {
+        return new Promise((resolve, reject) => {
+            const db = new sqlite3_1.default.Database(dbFilePath);
             console.log("Connected to the SQLite database. Cleaning up podcastindex_feeds.db...");
-            // Get all tables in the database
-            const tables = (yield dbAll.call(db, "SELECT name FROM sqlite_master WHERE type='table'"));
-            for (const table of tables) {
-                // Get all columns for the current table
-                const columns = (yield dbAll.call(db, `PRAGMA table_info(${table.name})`));
-                for (const column of columns) {
-                    // Update empty strings to NULL for each column
-                    const updateQuery = `UPDATE ${table.name} SET ${column.name} = NULL WHERE ${column.name} = ''`;
-                    const result = yield dbRun.call(db, updateQuery);
-                    console.log(`Updated ${result.changes} rows in ${table.name}.${column.name}`);
+            db.all("SELECT name FROM sqlite_master WHERE type='table'", [], (err, tables) => __awaiter(this, void 0, void 0, function* () {
+                if (err) {
+                    console.error("Error getting tables:", err.message);
+                    reject(err);
+                    return;
                 }
-            }
-            console.log("Database cleanup completed.");
-        }
-        catch (err) {
-            console.error("Error during database cleanup:", err.message);
-        }
-        finally {
-            // Close the database connection
-            try {
-                yield dbClose.call(db);
-                console.log("Database connection closed.");
-            }
-            catch (err) {
-                console.error("Error closing database:", err.message);
-            }
-        }
+                try {
+                    // Process each table
+                    for (const table of tables) {
+                        // Get all columns for the current table
+                        const columns = yield new Promise((resolve, reject) => {
+                            db.all(`PRAGMA table_info(${table.name})`, [], (err, columns) => {
+                                if (err) {
+                                    reject(err);
+                                }
+                                else {
+                                    resolve(columns);
+                                }
+                            });
+                        });
+                        // Update empty strings to NULL for each column
+                        for (const column of columns) {
+                            const updateQuery = `UPDATE ${table.name} SET ${column.name} = NULL WHERE ${column.name} = ''`;
+                            yield new Promise((resolve, reject) => {
+                                db.run(updateQuery, [], function (err) {
+                                    if (err) {
+                                        console.error(`Error updating ${table.name}.${column.name}:`, err.message);
+                                        reject(err);
+                                    }
+                                    else {
+                                        console.log(`Updated ${this.changes} rows in ${table.name}.${column.name}`);
+                                        resolve();
+                                    }
+                                });
+                            });
+                        }
+                    }
+                    console.log("Database cleanup completed successfully.");
+                    db.close();
+                    resolve();
+                }
+                catch (error) {
+                    console.error("Error during database cleanup:", error);
+                    db.close();
+                    reject(error);
+                }
+            }));
+        });
     });
 }
 function isPodcastDbOldOrMissing() {
