@@ -138,22 +138,16 @@ function loadEnrichmentState(saveFileName) {
         }
         catch (error) {
             // If the file doesn't exist or there's an error reading it
-            if (error.code === "ENOENT") {
-                console.log(`File ${saveFileName} not found. Creating default state.`);
-                const defaultState = {
-                    page: 0,
-                    limit: 20,
-                    seenCount: 0,
-                    totalCount: 0,
-                };
-                // Save the default state to the file
-                yield saveEnrichmentState(defaultState, saveFileName);
-                return defaultState;
-            }
-            else {
-                console.error("Error loading EnrichmentState:", error);
-                throw error;
-            }
+            console.log(`File ${saveFileName} not found. Creating default state.`);
+            const defaultState = {
+                page: 0,
+                limit: 4,
+                seenCount: 0,
+                totalCount: 0,
+            };
+            // Save the default state to the file
+            yield saveEnrichmentState(defaultState, saveFileName);
+            return defaultState;
         }
     });
 }
