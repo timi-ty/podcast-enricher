@@ -1,7 +1,12 @@
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import { PodcastEnriched, PodcastsEnrichedPayload } from "./model";
-import { backendUrl, closeBrowser, prisma } from "./utils";
+import {
+  backendUrl,
+  closeBrowser,
+  extractLanguageCodeFromRSS,
+  prisma,
+} from "./utils";
 import { enrichBatch } from "./enrichment";
 
 export function startServer() {
@@ -47,9 +52,14 @@ export function startServer() {
       //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
 
       const payload: PodcastsEnrichedPayload = { items: [] };
-      payload.items = podcasts.map((podcast, index) => {
-        return { ...podcast, language: podcastsToEnrich[index].language };
-      });
+      payload.items = await Promise.all(
+        podcasts.map(async (podcast, index) => {
+          const language =
+            (await extractLanguageCodeFromRSS(podcastsToEnrich[index].url)) ??
+            podcastsToEnrich[index].language;
+          return { ...podcast, language };
+        })
+      );
       let response = await fetch(`${backendUrl}/podcasts`, {
         method: "POST",
         body: JSON.stringify(payload),
