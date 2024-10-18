@@ -33,16 +33,23 @@ export function startServer() {
         .filter((id) => id !== null) as number[];
 
       // Fetch podcasts from the database using the extracted podcast_index_ids
-      const podcastsToEnrich = await prisma.podcast.findMany({
-        where: {
-          id: {
-            in: podcastIndexIds,
+      const podcastsToEnrich = await prisma.podcast
+        .findMany({
+          where: {
+            id: {
+              in: podcastIndexIds,
+            },
+            dead: 0,
           },
-          dead: 0,
-        },
-      });
+        })
+        .then((podcasts) =>
+          podcasts.reduce((acc, podcast) => {
+            acc.set(podcast.id, podcast);
+            return acc;
+          }, new Map<number, (typeof podcasts)[0]>())
+        );
 
-      if (podcastsToEnrich.length === 0) {
+      if (podcastsToEnrich.size === 0) {
         return res
           .status(404)
           .json({ error: "No matching podcasts found in the database." });
@@ -53,10 +60,11 @@ export function startServer() {
 
       const payload: PodcastsEnrichedPayload = { items: [] };
       payload.items = await Promise.all(
-        podcasts.map(async (podcast, index) => {
+        podcasts.map(async (podcast) => {
           const language =
-            (await extractLanguageCodeFromRSS(podcastsToEnrich[index].url)) ??
-            podcastsToEnrich[index].language;
+            (await extractLanguageCodeFromRSS(
+              podcastsToEnrich.get(podcast.id)!.url
+            )) ?? podcastsToEnrich.get(podcast.id)!.language;
           return { ...podcast, language };
         })
       );
@@ -68,13 +76,13 @@ export function startServer() {
       if (response.ok) {
         console.log(
           `Posted ${
-            podcastsToEnrich.length
+            podcastsToEnrich.size
           } enriched podcasts. Result: ${await response.text()}`
         );
       } else {
         console.log(
           `Failed to post ${
-            podcastsToEnrich.length
+            podcastsToEnrich.size
           } enriched podcast. Error: ${await response.text()}`
         );
       }

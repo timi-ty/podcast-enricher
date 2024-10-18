@@ -34,15 +34,20 @@ function startServer() {
                 .map((podcast) => podcast.podcast_index_id)
                 .filter((id) => id !== null);
             // Fetch podcasts from the database using the extracted podcast_index_ids
-            const podcastsToEnrich = yield utils_1.prisma.podcast.findMany({
+            const podcastsToEnrich = yield utils_1.prisma.podcast
+                .findMany({
                 where: {
                     id: {
                         in: podcastIndexIds,
                     },
                     dead: 0,
                 },
-            });
-            if (podcastsToEnrich.length === 0) {
+            })
+                .then((podcasts) => podcasts.reduce((acc, podcast) => {
+                acc.set(podcast.id, podcast);
+                return acc;
+            }, new Map()));
+            if (podcastsToEnrich.size === 0) {
                 return res
                     .status(404)
                     .json({ error: "No matching podcasts found in the database." });
@@ -50,9 +55,9 @@ function startServer() {
             // Re-enrich the podcasts
             //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
             const payload = { items: [] };
-            payload.items = yield Promise.all(podcasts.map((podcast, index) => __awaiter(this, void 0, void 0, function* () {
+            payload.items = yield Promise.all(podcasts.map((podcast) => __awaiter(this, void 0, void 0, function* () {
                 var _a;
-                const language = (_a = (yield (0, utils_1.extractLanguageCodeFromRSS)(podcastsToEnrich[index].url))) !== null && _a !== void 0 ? _a : podcastsToEnrich[index].language;
+                const language = (_a = (yield (0, utils_1.extractLanguageCodeFromRSS)(podcastsToEnrich.get(podcast.id).url))) !== null && _a !== void 0 ? _a : podcastsToEnrich.get(podcast.id).language;
                 return Object.assign(Object.assign({}, podcast), { language });
             })));
             let response = yield fetch(`${utils_1.backendUrl}/podcasts`, {
@@ -61,10 +66,10 @@ function startServer() {
                 headers: [["Content-Type", "application/json"]],
             });
             if (response.ok) {
-                console.log(`Posted ${podcastsToEnrich.length} enriched podcasts. Result: ${yield response.text()}`);
+                console.log(`Posted ${podcastsToEnrich.size} enriched podcasts. Result: ${yield response.text()}`);
             }
             else {
-                console.log(`Failed to post ${podcastsToEnrich.length} enriched podcast. Error: ${yield response.text()}`);
+                console.log(`Failed to post ${podcastsToEnrich.size} enriched podcast. Error: ${yield response.text()}`);
             }
             //   if (!isAllEnriched) {
             //     return res
