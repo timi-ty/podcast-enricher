@@ -40,7 +40,6 @@ function startServer() {
                     id: {
                         in: podcastIndexIds,
                     },
-                    dead: 0,
                 },
             })
                 .then((podcasts) => podcasts.reduce((acc, podcast) => {
@@ -55,11 +54,11 @@ function startServer() {
             // Re-enrich the podcasts
             //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
             const payload = { items: [] };
-            payload.items = yield Promise.all(podcasts.map((podcast) => __awaiter(this, void 0, void 0, function* () {
+            payload.items = podcasts.map((podcast) => {
                 var _a;
-                const language = (_a = (yield (0, utils_1.extractLanguageCodeFromRSS)(podcastsToEnrich.get(podcast.id).url))) !== null && _a !== void 0 ? _a : podcastsToEnrich.get(podcast.id).language;
+                const language = podcastsToEnrich.get((_a = podcast.podcast_index_id) !== null && _a !== void 0 ? _a : -1).language;
                 return Object.assign(Object.assign({}, podcast), { language });
-            })));
+            });
             let response = yield fetch(`${utils_1.backendUrl}/podcasts`, {
                 method: "POST",
                 body: JSON.stringify(payload),

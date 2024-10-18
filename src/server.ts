@@ -39,7 +39,6 @@ export function startServer() {
             id: {
               in: podcastIndexIds,
             },
-            dead: 0,
           },
         })
         .then((podcasts) =>
@@ -59,15 +58,13 @@ export function startServer() {
       //   const isAllEnriched = await enrichBatch(podcastsToEnrich, true);
 
       const payload: PodcastsEnrichedPayload = { items: [] };
-      payload.items = await Promise.all(
-        podcasts.map(async (podcast) => {
-          const language =
-            (await extractLanguageCodeFromRSS(
-              podcastsToEnrich.get(podcast.id)!.url
-            )) ?? podcastsToEnrich.get(podcast.id)!.language;
-          return { ...podcast, language };
-        })
-      );
+      payload.items = podcasts.map((podcast) => {
+        const language = podcastsToEnrich.get(
+          podcast.podcast_index_id ?? -1
+        )!.language;
+        return { ...podcast, language };
+      });
+
       let response = await fetch(`${backendUrl}/podcasts`, {
         method: "POST",
         body: JSON.stringify(payload),
