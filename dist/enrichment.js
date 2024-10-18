@@ -38,7 +38,7 @@ function enrichBatch(podcasts_1) {
             const newReportRow = Object.assign({}, model_1.emptyEnriched);
             const enrichRow = () => __awaiter(this, void 0, void 0, function* () {
                 console.log(`Enriching podcast "${podcastsToEnrich[i].title}" with popularity score = ${podcastsToEnrich[i].popularityScore}`);
-                addBasicInfo(podcastsToEnrich[i], newReportRow);
+                yield addBasicInfo(podcastsToEnrich[i], newReportRow);
                 //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
                 let shouldPush = yield addSpotifyInfo(podcastsToEnrich[i], newReportRow);
                 shouldPush && (shouldPush = yield addAppleInfo(podcastsToEnrich[i], newReportRow));
@@ -110,30 +110,33 @@ function enrichAll() {
     });
 }
 function addBasicInfo(podcast, row) {
-    var _a, _b, _c, _d, _e;
-    row.podcast_index_id = podcast.id;
-    row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
-    row.language = (_b = podcast.language) !== null && _b !== void 0 ? _b : "";
-    row.podcast_description = (_c = podcast.description) !== null && _c !== void 0 ? _c : "";
-    row.rss_feed_url = (_d = podcast.url) !== null && _d !== void 0 ? _d : "";
-    row.rss_categories = [
-        podcast.category1,
-        podcast.category2,
-        podcast.category3,
-        podcast.category4,
-        podcast.category5,
-        podcast.category6,
-        podcast.category7,
-        podcast.category8,
-        podcast.category9,
-        podcast.category10,
-    ]
-        .filter((category) => category && category.trim() !== "")
-        .join(", ");
-    row.rss_total_episodes = (_e = podcast.episodeCount) !== null && _e !== void 0 ? _e : 0;
-    row.host = podcast.host;
-    row.author = podcast.itunesAuthor;
-    row.owner = podcast.itunesOwnerName;
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d, _e, _f;
+        row.podcast_index_id = podcast.id;
+        row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
+        row.language =
+            (_c = (_b = (yield (0, utils_1.extractLanguageCodeFromRSS)(podcast.url))) !== null && _b !== void 0 ? _b : podcast.language) !== null && _c !== void 0 ? _c : "";
+        row.podcast_description = (_d = podcast.description) !== null && _d !== void 0 ? _d : "";
+        row.rss_feed_url = (_e = podcast.url) !== null && _e !== void 0 ? _e : "";
+        row.rss_categories = [
+            podcast.category1,
+            podcast.category2,
+            podcast.category3,
+            podcast.category4,
+            podcast.category5,
+            podcast.category6,
+            podcast.category7,
+            podcast.category8,
+            podcast.category9,
+            podcast.category10,
+        ]
+            .filter((category) => category && category.trim() !== "")
+            .join(", ");
+        row.rss_total_episodes = (_f = podcast.episodeCount) !== null && _f !== void 0 ? _f : 0;
+        row.host = podcast.host;
+        row.author = podcast.itunesAuthor;
+        row.owner = podcast.itunesOwnerName;
+    });
 }
 function addSpotifyInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {

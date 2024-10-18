@@ -16,6 +16,36 @@ export function sha1(str: string) {
   return crypto.createHash("sha1").update(str).digest("hex");
 }
 
+export async function extractLanguageCodeFromRSS(
+  url: string
+): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const xmlText = await response.text();
+
+    // Array of regexes to match different language code formats
+    const languageRegexes = [
+      /<language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/language>/i,
+      /<dc:language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/dc:language>/i,
+      /<xml:lang>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/xml:lang>/i,
+      /xml:lang="([^"]+)"/i,
+      /lang="([^"]+)"/i,
+    ];
+
+    for (const regex of languageRegexes) {
+      const match = xmlText.match(regex);
+      if (match && match[1]) {
+        return match[1].trim().toLowerCase();
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching or parsing RSS feed:", error);
+    return null;
+  }
+}
+
 export function extractSpotifyReview(html: string): (string | null)[] {
   const $ = cheerio.load(html);
   const spanCount = $(
