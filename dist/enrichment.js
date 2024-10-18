@@ -111,13 +111,12 @@ function enrichAll() {
 }
 function addBasicInfo(podcast, row) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e;
         row.podcast_index_id = podcast.id;
         row.podcast_name = (_a = podcast.title) !== null && _a !== void 0 ? _a : "";
-        row.language =
-            (_c = (_b = (yield (0, utils_1.extractLanguageCodeFromRSS)(podcast.url))) !== null && _b !== void 0 ? _b : podcast.language) !== null && _c !== void 0 ? _c : "";
-        row.podcast_description = (_d = podcast.description) !== null && _d !== void 0 ? _d : "";
-        row.rss_feed_url = (_e = podcast.url) !== null && _e !== void 0 ? _e : "";
+        row.language = (_b = podcast.language) !== null && _b !== void 0 ? _b : "";
+        row.podcast_description = (_c = podcast.description) !== null && _c !== void 0 ? _c : "";
+        row.rss_feed_url = (_d = podcast.url) !== null && _d !== void 0 ? _d : "";
         row.rss_categories = [
             podcast.category1,
             podcast.category2,
@@ -132,7 +131,7 @@ function addBasicInfo(podcast, row) {
         ]
             .filter((category) => category && category.trim() !== "")
             .join(", ");
-        row.rss_total_episodes = (_f = podcast.episodeCount) !== null && _f !== void 0 ? _f : 0;
+        row.rss_total_episodes = (_e = podcast.episodeCount) !== null && _e !== void 0 ? _e : 0;
         row.host = podcast.host;
         row.author = podcast.itunesAuthor;
         row.owner = podcast.itunesOwnerName;

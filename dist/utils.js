@@ -38,7 +38,6 @@ var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prisma = exports.backendUrl = void 0;
 exports.sha1 = sha1;
-exports.extractLanguageCodeFromRSS = extractLanguageCodeFromRSS;
 exports.extractSpotifyReview = extractSpotifyReview;
 exports.extractAppleReview = extractAppleReview;
 exports.extractFromParentheses = extractFromParentheses;
@@ -58,33 +57,6 @@ exports.backendUrl = (_a = process.env.BACKEND_URL) !== null && _a !== void 0 ? 
 exports.prisma = new client_1.PrismaClient();
 function sha1(str) {
     return crypto_1.default.createHash("sha1").update(str).digest("hex");
-}
-function extractLanguageCodeFromRSS(url) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const response = yield fetch(url);
-            const xmlText = yield response.text();
-            // Array of regexes to match different language code formats
-            const languageRegexes = [
-                /<language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/language>/i,
-                /<dc:language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/dc:language>/i,
-                /<xml:lang>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/xml:lang>/i,
-                /xml:lang="([^"]+)"/i,
-                /lang="([^"]+)"/i,
-            ];
-            for (const regex of languageRegexes) {
-                const match = xmlText.match(regex);
-                if (match && match[1]) {
-                    return match[1].trim().toLowerCase();
-                }
-            }
-            return null;
-        }
-        catch (error) {
-            console.error("Error fetching or parsing RSS feed:", error);
-            return null;
-        }
-    });
 }
 function extractSpotifyReview(html) {
     const $ = cheerio.load(html);
