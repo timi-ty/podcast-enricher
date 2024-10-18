@@ -16,6 +16,36 @@ export function sha1(str: string) {
   return crypto.createHash("sha1").update(str).digest("hex");
 }
 
+export async function extractLanguageCodeFromRSS(
+  url: string
+): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const xmlText = await response.text();
+
+    // Array of regexes to match different language code formats
+    const languageRegexes = [
+      /<language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/language>/i,
+      /<dc:language>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/dc:language>/i,
+      /<xml:lang>(?:<!\[CDATA\[)?([^<\]]+)(?:\]\]>)?<\/xml:lang>/i,
+      /xml:lang="([^"]+)"/i,
+      /lang="([^"]+)"/i,
+    ];
+
+    for (const regex of languageRegexes) {
+      const match = xmlText.match(regex);
+      if (match && match[1]) {
+        return match[1].trim().toLowerCase();
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching or parsing RSS feed:", error);
+    return null;
+  }
+}
+
 export function extractSpotifyReview(html: string): (string | null)[] {
   const $ = cheerio.load(html);
   const spanCount = $(
@@ -109,20 +139,15 @@ export async function loadEnrichmentState(
     return state;
   } catch (error) {
     // If the file doesn't exist or there's an error reading it
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      console.log(`File ${saveFileName} not found. Creating default state.`);
-      const defaultState: EnrichmentState = {
-        page: 0,
-        limit: 20,
-        seenCount: 0,
-        totalCount: 0,
-      };
-      // Save the default state to the file
-      await saveEnrichmentState(defaultState, saveFileName);
-      return defaultState;
-    } else {
-      console.error("Error loading EnrichmentState:", error);
-      throw error;
-    }
+    console.log(`File ${saveFileName} not found. Creating default state.`);
+    const defaultState: EnrichmentState = {
+      page: 0,
+      limit: 4,
+      seenCount: 0,
+      totalCount: 0,
+    };
+    // Save the default state to the file
+    await saveEnrichmentState(defaultState, saveFileName);
+    return defaultState;
   }
 }

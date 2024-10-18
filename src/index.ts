@@ -1,3 +1,8 @@
+import {
+  cleanupDatabase,
+  downloadAndExtractDatabase,
+  isPodcastDbOldOrMissing,
+} from "./api.podcastindex";
 import { enrichAll } from "./enrichment";
 import { startServer } from "./server";
 import { prisma } from "./utils";

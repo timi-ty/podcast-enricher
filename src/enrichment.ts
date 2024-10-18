@@ -3,6 +3,7 @@ import {
   closeBrowser,
   extractAppleReview,
   extractFromParentheses,
+  extractLanguageCodeFromRSS,
   extractSpotifyReview,
   fetchHydratedHtmlContent,
   loadEnrichmentState,
@@ -56,7 +57,7 @@ export async function enrichBatch(
       console.log(
         `Enriching podcast "${podcastsToEnrich[i].title}" with popularity score = ${podcastsToEnrich[i].popularityScore}`
       );
-      addBasicInfo(podcastsToEnrich[i], newReportRow);
+      await addBasicInfo(podcastsToEnrich[i], newReportRow);
       //some error conditions during scraping may mark the scrape as essentially failed meaning the podcast item should be skipped so that it can be retried later.
       let shouldPush = await addSpotifyInfo(podcastsToEnrich[i], newReportRow);
       shouldPush &&= await addAppleInfo(podcastsToEnrich[i], newReportRow);
@@ -153,10 +154,11 @@ export async function enrichAll() {
   console.log("All enrichments complete.");
 }
 
-function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
+async function addBasicInfo(podcast: Podcast, row: PodcastEnriched) {
   row.podcast_index_id = podcast.id;
   row.podcast_name = podcast.title ?? "";
-  row.language = podcast.language ?? "";
+  row.language =
+    (await extractLanguageCodeFromRSS(podcast.url)) ?? podcast.language ?? "";
   row.podcast_description = podcast.description ?? "";
   row.rss_feed_url = podcast.url ?? "";
   row.rss_categories = [

@@ -25,4 +25,5 @@ exports.emptyEnriched = {
     youtube_total_episodes: 0,
     youtube_recent_average_views: 0,
     youtube_last_published_at: new Date("1970-01-01T00:00:00Z"),
+    stale: false,
 };
